@@ -37,7 +37,7 @@
   "devDependencies": {
     "@types/chai": "^3.4.32",
     "@types/harmony-proxy": "^1.0.27",
-    "@types/mocha": "^ 2.2.35",
+    "@types/mocha": "^2.2.36",
     "@types/sinon": "^1.16.29",
     "bluebird": "^3.4.7",
     "browserify": "^13.0.0",
