@@ -555,9 +555,17 @@ describe("Planner", () => {
         @injectable()
         class Katana implements Katana { }
 
+        interface Ninja { }
+
+        @injectable()
+        class Ninja implements Ninja {
+            constructor(public katana: Katana) {}
+        }
         let container = new Container({autoBind: true, defaultScope: "Transient"});
-        let actualPlan = plan(new MetadataReader(), container, false, TargetTypeEnum.Variable, Katana).plan;
-        expect(actualPlan.rootRequest.bindings[0].implementationType).to.equal(Katana);
+        let actualPlan = plan(new MetadataReader(), container, false, TargetTypeEnum.Variable, Ninja).plan;
+        expect(actualPlan.rootRequest.bindings[0].implementationType).to.equal(Ninja);
+        expect(actualPlan.rootRequest.childRequests[0].bindings[0]. implementationType).to.equal(Katana);
         expect(container.isBound(Katana)).to.be.false;
+        expect(container.isBound(Ninja)).to.be.false;
     });
 });
