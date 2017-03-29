@@ -65,11 +65,13 @@ class Container implements interfaces.Container {
             }
 
             this.options = {
+                autoBind: Boolean(containerOptions.autoBind),
                 defaultScope: containerOptions.defaultScope
             };
 
         } else {
             this.options = {
+                autoBind: false,
                 defaultScope: BindingScopeEnum.Transient
             };
         }

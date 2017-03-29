@@ -187,7 +187,8 @@ function _createSubRequests(
 
 function getBindings<T>(
     container: interfaces.Container,
-    serviceIdentifier: interfaces.ServiceIdentifier<T>
+    serviceIdentifier: interfaces.ServiceIdentifier<T>,
+    didAutoBind?: boolean
 ): interfaces.Binding<T>[] {
 
     let bindings: interfaces.Binding<T>[] = [];
@@ -197,6 +198,12 @@ function getBindings<T>(
 
         bindings = bindingDictionary.get(serviceIdentifier);
 
+    } else if (!didAutoBind && _canUseAutoBinding(container, serviceIdentifier)) {
+
+        container.bind(serviceIdentifier).toSelf();
+        bindings = getBindings<T>(container, serviceIdentifier, true);
+        container.unbind(serviceIdentifier);
+
     } else if (container.parent !== null) {
 
         // recursively try to get bindings from parent container
@@ -205,6 +212,11 @@ function getBindings<T>(
     }
 
     return bindings;
+}
+
+function _canUseAutoBinding(container: interfaces.Container, serviceIdentifier: interfaces.ServiceIdentifier<any>): boolean {
+
+    return (Boolean(container.options.autoBind) && typeof serviceIdentifier === "function");
 }
 
 function plan(

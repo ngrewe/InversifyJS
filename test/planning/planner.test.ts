@@ -547,4 +547,17 @@ describe("Planner", () => {
 
         expect(throwFunction).to.throw(`${ERROR_MSGS.MISSING_INJECT_ANNOTATION} argument 0 in class Ninja.`);
     });
+
+    it("Should find auto-bound concrete classes without permanently binding them", () => {
+
+        interface Katana { }
+
+        @injectable()
+        class Katana implements Katana { }
+
+        let container = new Container({autoBind: true, defaultScope: "Transient"});
+        let actualPlan = plan(new MetadataReader(), container, false, TargetTypeEnum.Variable, Katana).plan;
+        expect(actualPlan.rootRequest.bindings[0].implementationType).to.equal(Katana);
+        expect(container.isBound(Katana)).to.be.false;
+    });
 });

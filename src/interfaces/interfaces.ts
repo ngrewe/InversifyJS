@@ -157,6 +157,7 @@ namespace interfaces {
 
     export interface ContainerOptions {
         defaultScope: BindingScope;
+        autoBind?: boolean;
     }
 
     export interface Container {
