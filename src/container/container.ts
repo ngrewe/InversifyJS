@@ -209,7 +209,7 @@ class Container implements interfaces.Container {
     }
 
     public createChild(): Container {
-        let child = new Container();
+        let child = new Container(this.options);
         child.parent = this;
         return child;
     }
