@@ -198,17 +198,17 @@ function getBindings<T>(
 
         bindings = bindingDictionary.get(serviceIdentifier);
 
-    } else if (!didAutoBind && _canUseAutoBinding(container, serviceIdentifier)) {
-
-        container.bind(serviceIdentifier).toSelf();
-        bindings = getBindings<T>(container, serviceIdentifier, true);
-        container.unbind(serviceIdentifier);
-
     } else if (container.parent !== null) {
 
         // recursively try to get bindings from parent container
         bindings = getBindings<T>(container.parent, serviceIdentifier);
 
+    }
+
+    if (bindings.length === 0 && !didAutoBind && _canUseAutoBinding(container, serviceIdentifier)) {
+        container.bind(serviceIdentifier).toSelf();
+        bindings = getBindings<T>(container, serviceIdentifier, true);
+        container.unbind(serviceIdentifier);
     }
 
     return bindings;
