@@ -39,6 +39,10 @@ namespace interfaces {
 
     export type ServiceIdentifier<T> = (string | symbol | Newable<T> | Abstract<T>);
 
+    export interface Clonable<T> {
+        clone(): T;
+    }
+
     export interface Binding<T> extends Clonable<Binding<T>> {
         guid: string;
         moduleId: string;
@@ -220,10 +224,6 @@ namespace interfaces {
         middleware: Next | null;
     }
 
-    export interface Clonable<T> {
-        clone(): T;
-    }
-
     export interface Lookup<T> extends Clonable<Lookup<T>> {
         add(serviceIdentifier: ServiceIdentifier<any>, value: T): void;
         getMap(): Map<interfaces.ServiceIdentifier<any>, T[]>;
@@ -235,30 +235,9 @@ namespace interfaces {
         traverse(func: (key: interfaces.ServiceIdentifier<any>, value: T[]) => void): void;
     }
 
-    export interface BindingInSyntax<T> {
-        inSingletonScope(): BindingWhenOnSyntax<T>;
-        inTransientScope(): BindingWhenOnSyntax<T>;
-    }
-
-    export interface BindingInWhenOnSyntax<T> extends BindingInSyntax<T>, BindingWhenOnSyntax<T> { }
-
     export interface BindingOnSyntax<T> {
         onActivation(fn: (context: Context, injectable: T) => T): BindingWhenSyntax<T>;
     }
-
-    export interface BindingToSyntax<T> {
-        to(constructor: { new (...args: any[]): T; }): BindingInWhenOnSyntax<T>;
-        toSelf(): BindingInWhenOnSyntax<T>;
-        toConstantValue(value: T): BindingWhenOnSyntax<T>;
-        toDynamicValue(func: (context: Context) => T): BindingInWhenOnSyntax<T>;
-        toConstructor<T2>(constructor: Newable<T2>): BindingWhenOnSyntax<T>;
-        toFactory<T2>(factory: FactoryCreator<T2>): BindingWhenOnSyntax<T>;
-        toFunction(func: T): BindingWhenOnSyntax<T>;
-        toAutoFactory<T2>(serviceIdentifier: ServiceIdentifier<T2>): BindingWhenOnSyntax<T>;
-        toProvider<T2>(provider: ProviderCreator<T2>): BindingWhenOnSyntax<T>;
-    }
-
-    export interface BindingWhenOnSyntax<T> extends BindingWhenSyntax<T>, BindingOnSyntax<T> { }
 
     export interface BindingWhenSyntax<T> {
         when(constraint: (request: Request) => boolean): BindingOnSyntax<T>;
@@ -278,13 +257,34 @@ namespace interfaces {
         whenNoAncestorMatches(constraint: (request: Request) => boolean): BindingOnSyntax<T>;
     }
 
+    export interface BindingWhenOnSyntax<T> extends BindingWhenSyntax<T>, BindingOnSyntax<T> { }
+
+    export interface BindingInSyntax<T> {
+        inSingletonScope(): BindingWhenOnSyntax<T>;
+        inTransientScope(): BindingWhenOnSyntax<T>;
+    }
+
+    export interface BindingInWhenOnSyntax<T> extends BindingInSyntax<T>, BindingWhenOnSyntax<T> { }
+
+    export interface BindingToSyntax<T> {
+        to(constructor: { new (...args: any[]): T; }): BindingInWhenOnSyntax<T>;
+        toSelf(): BindingInWhenOnSyntax<T>;
+        toConstantValue(value: T): BindingWhenOnSyntax<T>;
+        toDynamicValue(func: (context: Context) => T): BindingInWhenOnSyntax<T>;
+        toConstructor<T2>(constructor: Newable<T2>): BindingWhenOnSyntax<T>;
+        toFactory<T2>(factory: FactoryCreator<T2>): BindingWhenOnSyntax<T>;
+        toFunction(func: T): BindingWhenOnSyntax<T>;
+        toAutoFactory<T2>(serviceIdentifier: ServiceIdentifier<T2>): BindingWhenOnSyntax<T>;
+        toProvider<T2>(provider: ProviderCreator<T2>): BindingWhenOnSyntax<T>;
+    }
+
     export interface ConstraintFunction extends Function {
         metaData?: Metadata;
         (request: Request | null): boolean;
     }
 
     export interface MetadataReader {
-        getConstrucotorMetadata(constructorFunc: Function): ConstructorMetadata;
+        getConstructorMetadata(constructorFunc: Function): ConstructorMetadata;
         getPropertiesMetadata(constructorFunc: Function): MetadataMap;
     }
 

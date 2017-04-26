@@ -6,6 +6,7 @@ import * as METADATA_KEY from "../../src/constants/metadata_keys";
 import { getDependencies } from "../../src/planning/reflection_utils";
 import { MetadataReader } from "../../src/planning/metadata_reader";
 import {
+    decorate,
     Container,
     injectable,
     named,
@@ -617,6 +618,192 @@ describe("Bugs", () => {
         expect(soldier.weapon instanceof DefaultWeapon).to.eql(true);
         expect(knight.weapon instanceof Sword).to.eql(true);
         expect(archer.weapon instanceof Bow).to.eql(true);
+
+    });
+
+    it("Should be able apply inject to property shurtcut", () => {
+
+        interface Weapon {
+            use(): string;
+        }
+
+        @injectable()
+        class Katana implements Weapon {
+            public use() {
+                return "Used Katana!";
+            }
+        }
+
+        @injectable()
+        class Ninja {
+            public constructor(@inject("Weapon") @named("sword") private _weapon: Weapon) {
+                //
+            }
+            public fight() {
+                return this._weapon.use();
+            }
+        }
+
+        const container = new Container();
+        container.bind<Weapon>("Weapon").to(Katana).whenTargetNamed("sword");
+        container.bind<Ninja>(Ninja).toSelf();
+
+        let ninja = container.get<Ninja>(Ninja);
+        expect(ninja.fight()).eql("Used Katana!");
+
+    });
+
+    it("Should be able to inject into abstract base class without decorators", () => {
+
+        let TYPES = {
+            Warrior: "Warrior",
+            Weapon: "Weapon"
+        };
+
+        let TAGS = {
+            Primary: "Primary",
+            Priority: "Priority",
+            Secondary: "Secondary"
+        };
+
+        interface Weapon {
+            name: string;
+        }
+
+        @injectable()
+        class Katana implements Weapon {
+            public name: string;
+            public constructor() {
+                this.name = "Katana";
+            }
+        }
+
+        @injectable()
+        class Shuriken implements Weapon {
+            public name: string;
+            public constructor() {
+                this.name = "Shuriken";
+            }
+        }
+
+        interface Warrior {
+            name: string;
+            primaryWeapon: Weapon;
+        }
+
+        abstract class BaseWarrior implements Warrior {
+
+            public name: string;
+            public primaryWeapon: Weapon;
+
+            public constructor(@unmanaged() name: string) {
+                this.name = name;
+            }
+
+        }
+
+        // @injectable()
+        decorate(injectable(), BaseWarrior);
+
+        // @inject(TYPES.Weapon)
+        inject(TYPES.Weapon)(BaseWarrior.prototype, "primaryWeapon");
+
+        // @tagged(TAGS.Priority, TAGS.Primary)
+        tagged(TAGS.Priority, TAGS.Primary)(BaseWarrior.prototype, "primaryWeapon");
+
+        @injectable()
+        class Samurai extends BaseWarrior {
+
+            @inject(TYPES.Weapon)
+            @tagged(TAGS.Priority, TAGS.Secondary)
+            public secondaryWeapon: Weapon;
+
+            public constructor() {
+                super("Samurai");
+            }
+        }
+
+        let container = new Container();
+        container.bind<Warrior>(TYPES.Warrior).to(Samurai);
+        container.bind<Weapon>(TYPES.Weapon).to(Katana).whenTargetTagged(TAGS.Priority, TAGS.Primary);
+        container.bind<Weapon>(TYPES.Weapon).to(Shuriken).whenTargetTagged(TAGS.Priority, TAGS.Secondary);
+
+        let samurai = container.get<Samurai>(TYPES.Warrior);
+        expect(samurai.name).to.eql("Samurai");
+        expect(samurai.secondaryWeapon).not.to.eql(undefined);
+        expect(samurai.secondaryWeapon.name).to.eql("Shuriken");
+        expect(samurai.primaryWeapon).not.to.eql(undefined);
+        expect(samurai.primaryWeapon.name).to.eql("Katana");
+    });
+
+    it("Should be able to combine unmanaged and managed injections ", () => {
+
+        interface Model<T> {
+            instance: T;
+        }
+
+        interface RepoBaseInterface<T> {
+            model: Model<T>;
+        }
+
+        class Type {
+            public name: string;
+            public constructor() {
+                this.name = "Type";
+            }
+        }
+
+        @injectable()
+        class RepoBase<T> implements RepoBaseInterface<T> {
+
+            public model: Model<T>;
+
+            constructor(
+                // using @unmanaged() here is right
+                // because entityType is NOT Injected by inversify
+                @unmanaged() entityType: { new (): T; }
+            ) {
+                this.model = { instance: new entityType() };
+            }
+
+        }
+
+        @injectable()
+        class TypedRepo extends RepoBase<Type> {
+            constructor() {
+                super(Type); // unmanaged injection (NOT Injected by inversify)
+            }
+        }
+
+        @injectable()
+        class BLBase<T> {
+
+            public repository: RepoBaseInterface<T>;
+
+            constructor(
+                // using @unmanaged() here would wrong
+                // because repository is injected by inversify
+                repository: RepoBaseInterface<T>
+            ) {
+                this.repository = repository;
+            }
+        }
+
+        @injectable()
+        class TypedBL extends BLBase<Type> {
+            constructor(
+                repository: TypedRepo // Injected by inversify (no @inject required)
+            ) {
+                super(repository); // managed injection (Injected by inversify)
+            }
+        }
+
+        const container = new Container();
+        container.bind<TypedRepo>(TypedRepo).toSelf();
+        container.bind<TypedBL>("TypedBL").to(TypedBL);
+
+        const typedBL = container.get<TypedBL>("TypedBL");
+        expect(typedBL.repository.model.instance.name).to.eq(new Type().name);
 
     });
 
